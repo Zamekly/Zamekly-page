@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import ScrollReset from "@/components/ScrollReset";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${inter.variable} h-full`}>
       <body className="min-h-full bg-white text-slate-900 antialiased">
+        <ScrollReset />
         {children}
       </body>
     </html>
