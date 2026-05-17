@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Logo from "./Logo";
 
 const NAV_LINKS = [
@@ -6,6 +7,12 @@ const NAV_LINKS = [
   { href: "#modelos", label: "Modelos" },
   { href: "#donde-instalamos", label: "Dónde instalamos" },
   { href: "#contacto", label: "Contacto" },
+];
+
+const LEGAL_LINKS = [
+  { href: "/privacidad", label: "Política de privacidad" },
+  { href: "/cookies", label: "Política de cookies" },
+  { href: "/terminos", label: "Términos y condiciones" },
 ];
 
 export default function Footer() {
@@ -36,16 +43,30 @@ export default function Footer() {
         </div>
 
         {/* Bottom row */}
-        <div className="mt-10 flex flex-col items-center gap-2 border-t border-slate-100 pt-8 sm:flex-row sm:justify-between">
-          <p className="text-xs text-slate-400">
-            © 2025 Zamekly. Todos los derechos reservados.
-          </p>
-          <a
-            href="mailto:info@zamekly.com"
-            className="text-xs text-slate-400 transition-colors hover:text-brand-navy"
-          >
-            info@zamekly.com
-          </a>
+        <div className="mt-10 border-t border-slate-100 pt-8">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+            <p className="text-xs text-slate-400">
+              © 2026 Zamekly. Todos los derechos reservados.
+            </p>
+            <a
+              href="mailto:info@zamekly.com"
+              className="text-xs text-slate-400 transition-colors hover:text-brand-navy"
+            >
+              info@zamekly.com
+            </a>
+          </div>
+          {/* Legal links */}
+          <div className="mt-3 flex flex-wrap justify-center gap-x-6 gap-y-1 sm:justify-start">
+            {LEGAL_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-xs text-slate-400 transition-colors hover:text-brand-navy"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

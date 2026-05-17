@@ -3,8 +3,8 @@ import Logo from "./Logo";
 
 const NAV_LINKS = [
   { href: "#como-funciona", label: "Cómo funciona" },
-  { href: "#por-que", label: "Por qué Zamekly" },
-  { href: "#donde", label: "Dónde instalamos" },
+  { href: "#por-que-zamekly", label: "Por qué Zamekly" },
+  { href: "#donde-instalamos", label: "Dónde instalamos" },
   { href: "#contacto", label: "Contacto" },
 ];
 
@@ -15,7 +15,7 @@ export default function Navbar() {
         className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8"
         aria-label="Principal"
       >
-        <Link href="/" aria-label="Zamekly · Inicio" className="shrink-0">
+        <Link href="/#inicio" aria-label="Zamekly · Inicio" className="shrink-0">
           <Logo />
         </Link>
 

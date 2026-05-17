@@ -82,7 +82,7 @@ export default function WhyZamekly() {
   return (
     <section
       id="por-que-zamekly"
-      className="bg-slate-50 py-24 sm:py-32"
+      className="bg-slate-50 py-24 sm:py-32 scroll-mt-20"
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* Header */}

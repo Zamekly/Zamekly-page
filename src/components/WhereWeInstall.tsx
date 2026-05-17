@@ -95,7 +95,7 @@ const locations = [
 
 export default function WhereWeInstall() {
   return (
-    <section id="donde-instalamos" className="bg-white py-24 sm:py-32">
+    <section id="donde-instalamos" className="bg-white py-24 sm:py-32 scroll-mt-20">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* Header */}
         <div className="mx-auto max-w-2xl text-center">

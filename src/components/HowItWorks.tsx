@@ -26,7 +26,7 @@ export default function HowItWorks() {
   return (
     <section
       id="como-funciona"
-      className="relative bg-white pt-12 pb-24 sm:pt-16 sm:pb-32"
+      className="relative bg-white pt-12 pb-24 sm:pt-16 sm:pb-32 scroll-mt-20"
     >
       {/* Section header */}
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
