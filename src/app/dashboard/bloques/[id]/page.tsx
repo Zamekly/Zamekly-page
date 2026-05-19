@@ -74,12 +74,10 @@ function LockerModal({
   async function changeStatus(newStatus: LockerStatus) {
     if (newStatus === localLocker.status) return;
     setSaving(true);
-    console.log("Intentando actualizar taquilla con id:", localLocker.id, "nuevo estado:", newStatus);
-    const { data, error } = await supabase
+    await supabase
       .from("taquillas")
       .update({ estado: newStatus })
       .eq("id", localLocker.id);
-    console.log("UPDATE resultado:", data, "ERROR:", error);
     const updated = { ...localLocker, status: newStatus };
     setLocalLocker(updated);
     onUpdate(updated);
