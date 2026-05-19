@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +16,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
       const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -30,14 +27,8 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
-      router.refresh();
+      window.location.href = "/dashboard";
     } catch {
-      // Supabase not configured — allow any login in dev mode
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-        router.push("/dashboard");
-        return;
-      }
       setError("Error de conexión. Inténtalo más tarde.");
       setLoading(false);
     }
@@ -48,7 +39,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-10 flex justify-center">
-          <Logo />
+          <a href="/">
+            <Logo />
+          </a>
         </div>
 
         <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">

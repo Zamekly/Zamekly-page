@@ -1,33 +1,80 @@
 "use client";
 
-import { useState } from "react";
-import { ALERTS, BLOCKS } from "@/lib/mock-data";
-import type { AlertStatus } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type AlertStatus = "active" | "resolved";
+
+type AlertRow = {
+  id: string;
+  bloque_id: string;
+  taquilla_id: string | null;
+  tipo: string;
+  descripcion: string;
+  prioridad: "critical" | "high" | "medium" | "low";
+  estado: AlertStatus;
+  created_at: string;
+  bloques?: { nombre: string } | null;
+};
+
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 const PRIORITY_CONFIG = {
   critical: { label: "Crítica", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
-  high: { label: "Alta", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
-  medium: { label: "Media", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-  low: { label: "Baja", color: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300" },
+  high:     { label: "Alta",    color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
+  medium:   { label: "Media",   color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  low:      { label: "Baja",    color: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300" },
 };
 
 const TYPE_LABEL: Record<string, string> = {
-  battery_low: "Batería baja",
-  water_low: "Agua baja",
-  air_low: "Aire bajo",
+  battery_low:   "Batería baja",
+  water_low:     "Agua baja",
+  air_low:       "Aire bajo",
   locker_broken: "Taquilla averiada",
-  lost_object: "Objeto olvidado",
+  lost_object:   "Objeto olvidado",
 };
 
+function lockerNumberFromId(id: string | null): number | undefined {
+  if (!id) return undefined;
+  const m = id.match(/-lk-(\d+)$/);
+  return m ? parseInt(m[1]) : undefined;
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function AlertasPage() {
+  const [alerts, setAlerts] = useState<AlertRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<AlertStatus | "all">("all");
 
-  const filtered = ALERTS.filter(
-    (a) => filter === "all" || a.status === filter
-  ).sort((a, b) => {
-    const p = { critical: 0, high: 1, medium: 2, low: 3 };
-    return p[a.priority] - p[b.priority];
-  });
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from("alertas")
+        .select("*, bloques(nombre)")
+        .order("created_at", { ascending: false });
+
+      setAlerts(data ?? []);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+
+  const filtered = alerts
+    .filter((a) => filter === "all" || a.estado === filter)
+    .sort((a, b) => priorityOrder[a.prioridad] - priorityOrder[b.prioridad]);
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-sm text-gray-400 dark:text-slate-500">Cargando…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -59,14 +106,14 @@ export default function AlertasPage() {
           </div>
         )}
         {filtered.map((alert) => {
-          const block = BLOCKS.find((b) => b.id === alert.blockId);
-          const pc = PRIORITY_CONFIG[alert.priority];
+          const pc = PRIORITY_CONFIG[alert.prioridad];
+          const lockerNum = lockerNumberFromId(alert.taquilla_id);
+          const blockName = (alert.bloques as { nombre: string } | null)?.nombre ?? alert.bloque_id;
+
           return (
             <div key={alert.id} className="flex items-start gap-4 px-6 py-5">
               {/* Priority badge */}
-              <span
-                className={`mt-0.5 shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${pc.color}`}
-              >
+              <span className={`mt-0.5 shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${pc.color}`}>
                 {pc.label}
               </span>
 
@@ -74,18 +121,18 @@ export default function AlertasPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="text-sm font-semibold text-brand-navy dark:text-white">
-                    {TYPE_LABEL[alert.type]}
+                    {TYPE_LABEL[alert.tipo] ?? alert.tipo}
                   </span>
                   <span className="text-xs text-slate-500 dark:text-slate-400">
-                    {block?.name ?? alert.blockId}
-                    {alert.lockerNumber ? ` · Taquilla #${alert.lockerNumber}` : ""}
+                    {blockName}
+                    {lockerNum ? ` · Taquilla #${lockerNum}` : ""}
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                  {alert.message}
+                  {alert.descripcion}
                 </p>
                 <p className="mt-1.5 text-xs text-slate-400">
-                  {new Date(alert.timestamp).toLocaleString("es-ES", {
+                  {new Date(alert.created_at).toLocaleString("es-ES", {
                     day: "numeric",
                     month: "short",
                     hour: "2-digit",
@@ -97,12 +144,12 @@ export default function AlertasPage() {
               {/* Status */}
               <span
                 className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                  alert.status === "active"
+                  alert.estado === "active"
                     ? "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"
                     : "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
                 }`}
               >
-                {alert.status === "active" ? "Activa" : "Resuelta"}
+                {alert.estado === "active" ? "Activa" : "Resuelta"}
               </span>
             </div>
           );

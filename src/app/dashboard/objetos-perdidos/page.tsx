@@ -1,23 +1,64 @@
 "use client";
 
-import { useState } from "react";
-import { LOST_OBJECTS, BLOCKS } from "@/lib/mock-data";
-import type { ObjectStatus } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ObjectStatus = "pending" | "collected";
+
+type ObjetoRow = {
+  id: string;
+  bloque_id: string;
+  taquilla_id: string;
+  estado: ObjectStatus;
+  notas: string | null;
+  created_at: string;
+  bloques?: { nombre: string } | null;
+};
+
+function lockerNumberFromId(id: string): number {
+  const m = id.match(/-lk-(\d+)$/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ObjetosPerdidosPage() {
+  const [objects, setObjects] = useState<ObjetoRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ObjectStatus | "all">("all");
 
-  const filtered = LOST_OBJECTS.filter(
-    (o) => filter === "all" || o.status === filter
-  ).sort(
-    (a, b) => new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime()
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from("objetos_perdidos")
+        .select("*, bloques(nombre)")
+        .order("created_at", { ascending: false });
+
+      setObjects(data ?? []);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const filtered = objects.filter(
+    (o) => filter === "all" || o.estado === filter
   );
 
-  const pending = LOST_OBJECTS.filter((o) => o.status === "pending").length;
+  const pending = objects.filter((o) => o.estado === "pending").length;
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-sm text-gray-400 dark:text-slate-500">Cargando…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
-      {/* Summary */}
+      {/* Summary banner */}
       {pending > 0 && (
         <div className="rounded-xl bg-orange-50 px-5 py-4 ring-1 ring-orange-200 dark:bg-orange-900/20 dark:ring-orange-700">
           <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
@@ -49,38 +90,34 @@ export default function ObjetosPerdidosPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-700">
-                {["Fecha y hora", "Bloque", "Taquilla", "Estado", "Notas"].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
+                {["Fecha y hora", "Bloque", "Taquilla", "Estado", "Notas"].map((h) => (
+                  <th
+                    key={h}
+                    className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-12 text-center text-slate-400"
-                  >
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                     No hay objetos en esta categoría.
                   </td>
                 </tr>
               )}
               {filtered.map((obj) => {
-                const block = BLOCKS.find((b) => b.id === obj.blockId);
+                const blockName = (obj.bloques as { nombre: string } | null)?.nombre ?? obj.bloque_id;
+                const lockerNum = lockerNumberFromId(obj.taquilla_id);
                 return (
                   <tr
                     key={obj.id}
                     className="border-b border-slate-50 last:border-0 dark:border-slate-700/50"
                   >
                     <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
-                      {new Date(obj.detectedAt).toLocaleString("es-ES", {
+                      {new Date(obj.created_at).toLocaleString("es-ES", {
                         day: "numeric",
                         month: "short",
                         hour: "2-digit",
@@ -88,24 +125,24 @@ export default function ObjetosPerdidosPage() {
                       })}
                     </td>
                     <td className="px-6 py-4 font-medium text-brand-navy dark:text-white">
-                      {block?.name ?? obj.blockId}
+                      {blockName}
                     </td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                      #{obj.lockerNumber}
+                      #{lockerNum}
                     </td>
                     <td className="px-6 py-4">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          obj.status === "pending"
+                          obj.estado === "pending"
                             ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
                             : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                         }`}
                       >
-                        {obj.status === "pending" ? "Pendiente" : "Recogido"}
+                        {obj.estado === "pending" ? "Pendiente" : "Recogido"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
-                      {obj.notes}
+                      {obj.notas ?? "—"}
                     </td>
                   </tr>
                 );

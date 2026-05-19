@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "./ThemeProvider";
 import Logo from "@/components/Logo";
-import { createClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 const NAV = [
   {
@@ -27,17 +27,6 @@ const NAV = [
         <rect x="2" y="6" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
         <path d="M6 6V4a4 4 0 0 1 8 0v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         <circle cx="10" cy="12" r="1.5" fill="currentColor" opacity=".6" />
-      </svg>
-    ),
-  },
-  {
-    href: "/dashboard/taquillas",
-    label: "Taquillas",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
-        <rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M3 9h14M8 2v7M12 2v7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-        <circle cx="10" cy="13.5" r="1.2" fill="currentColor" opacity=".6" />
       </svg>
     ),
   },
@@ -82,16 +71,6 @@ const NAV = [
       </svg>
     ),
   },
-  {
-    href: "/dashboard/configuracion",
-    label: "Configuración",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
-        <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      </svg>
-    ),
-  },
 ];
 
 export default function Sidebar() {
@@ -101,7 +80,6 @@ export default function Sidebar() {
 
   async function handleLogout() {
     try {
-      const supabase = createClient();
       await supabase.auth.signOut();
     } catch {
       // Supabase not configured — just redirect

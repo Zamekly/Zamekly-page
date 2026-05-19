@@ -33,7 +33,7 @@ export default function Navbar() {
         </ul>
 
         <a
-          href="/empleados"
+          href="/login"
           className="inline-flex items-center rounded-full bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-navy-soft"
         >
           Acceso socios

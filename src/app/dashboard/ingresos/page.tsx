@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { BLOCKS, getRevenueForPeriod } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Period = "today" | "week" | "month" | "year";
 
+type IngresoRow = { importe: number; created_at: string; bloque_id: string };
+type BloqueRow  = { id: string; nombre: string };
+
 const PERIOD_LABELS: Record<Period, string> = {
   today: "Hoy",
-  week: "Esta semana",
+  week:  "Esta semana",
   month: "Este mes",
-  year: "Este año",
+  year:  "Este año",
 };
 
 const BLOCK_COLORS = [
@@ -19,33 +24,83 @@ const BLOCK_COLORS = [
   "bg-amber-400",
 ];
 
+function periodStart(period: Period): Date {
+  const now = new Date();
+  if (period === "today") {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  if (period === "week") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 7);
+    return d;
+  }
+  if (period === "month") {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - 1);
+    return d;
+  }
+  // year
+  const d = new Date(now);
+  d.setFullYear(d.getFullYear() - 1);
+  return d;
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function IngresosPage() {
   const [period, setPeriod] = useState<Period>("month");
+  const [allIngresos, setAllIngresos] = useState<IngresoRow[]>([]);
+  const [bloques, setBloques] = useState<BloqueRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const rows = getRevenueForPeriod(period);
+  // Fetch a full year of data once; filter client-side when period changes
+  useEffect(() => {
+    async function load() {
+      const yearAgo = new Date();
+      yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+
+      const [ingresosRes, bloquesRes] = await Promise.all([
+        supabase
+          .from("ingresos")
+          .select("importe, created_at, bloque_id")
+          .gte("created_at", yearAgo.toISOString())
+          .order("created_at"),
+        supabase.from("bloques").select("id, nombre").order("nombre"),
+      ]);
+
+      setAllIngresos(ingresosRes.data ?? []);
+      setBloques(bloquesRes.data ?? []);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  // Filter by selected period
+  const cutoff = periodStart(period);
+  const rows = allIngresos.filter((r) => new Date(r.created_at) >= cutoff);
 
   // Total per block
-  const byBlock = BLOCKS.map((block) => {
+  const byBlock = bloques.map((block) => {
     const total = rows
-      .filter((r) => r.blockId === block.id)
-      .reduce((s, r) => s + r.amount, 0);
+      .filter((r) => r.bloque_id === block.id)
+      .reduce((s, r) => s + r.importe, 0);
     return { block, total };
   }).sort((a, b) => b.total - a.total);
 
   const grandTotal = byBlock.reduce((s, b) => s + b.total, 0);
-  const maxAmount = Math.max(...byBlock.map((b) => b.total), 1);
+  const maxAmount  = Math.max(...byBlock.map((b) => b.total), 1);
 
-  // Daily totals for bar chart (last 30 days for month, last 7 for week, etc.)
-  const chartDays = period === "today" ? 1 : period === "week" ? 7 : period === "month" ? 30 : 12;
+  // Bar chart buckets
   const chartLabel = period === "year" ? "mes" : "día";
 
   const dailyTotals: { label: string; amount: number }[] = (() => {
     if (period === "year") {
-      // Group by month
       const months: Record<string, number> = {};
       rows.forEach((r) => {
-        const m = r.date.substring(0, 7);
-        months[m] = (months[m] ?? 0) + r.amount;
+        const m = r.created_at.substring(0, 7);
+        months[m] = (months[m] ?? 0) + r.importe;
       });
       return Object.entries(months)
         .sort(([a], [b]) => a.localeCompare(b))
@@ -57,21 +112,28 @@ export default function IngresosPage() {
     }
     const days: Record<string, number> = {};
     rows.forEach((r) => {
-      days[r.date] = (days[r.date] ?? 0) + r.amount;
+      const d = r.created_at.substring(0, 10);
+      days[d] = (days[d] ?? 0) + r.importe;
     });
+    const limit = period === "today" ? 1 : period === "week" ? 7 : 30;
     return Object.entries(days)
       .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-chartDays)
+      .slice(-limit)
       .map(([d, amount]) => ({
-        label: new Date(d).toLocaleDateString("es-ES", {
-          day: "numeric",
-          month: "short",
-        }),
+        label: new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short" }),
         amount,
       }));
   })();
 
   const chartMax = Math.max(...dailyTotals.map((d) => d.amount), 1);
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-sm text-gray-400 dark:text-slate-500">Cargando…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -122,7 +184,7 @@ export default function IngresosPage() {
                   style={{ height: `${(d.amount / chartMax) * 140}px`, minHeight: 2 }}
                 />
                 {dailyTotals.length <= 12 && (
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 rotate-0">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
                     {d.label}
                   </span>
                 )}
@@ -141,7 +203,7 @@ export default function IngresosPage() {
               <div key={block.id}>
                 <div className="mb-1.5 flex justify-between text-sm">
                   <span className="font-medium text-slate-700 dark:text-slate-200">
-                    {block.name}
+                    {block.nombre}
                   </span>
                   <span className="font-semibold text-brand-navy dark:text-white">
                     {total.toLocaleString("es-ES", {
