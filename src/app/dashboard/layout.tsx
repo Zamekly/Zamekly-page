@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/dashboard/ThemeProvider";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import MfaBanner from "@/components/dashboard/MfaBanner";
+import AlertaPopup from "@/components/dashboard/AlertaPopup";
 import PendienteScreen from "@/components/dashboard/PendienteScreen";
 import { PermisosProvider } from "@/components/dashboard/PermisosProvider";
 import { createSupabaseServer } from "@/lib/supabase-server";
@@ -53,6 +54,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             <div className="flex-1 overflow-y-auto">
               <MfaBanner />
               <main className="p-6">{children}</main>
+              <AlertaPopup />
             </div>
           </div>
         </div>

@@ -7,7 +7,6 @@ export type Permisos = {
   ver_objetos_perdidos: boolean;
   ver_ingresos:         boolean;
   ver_usuarios:         boolean;
-  ver_configuracion:    boolean;
   ver_emails_usuarios:  boolean;
   gestionar_roles:      boolean;
 };
@@ -21,7 +20,6 @@ export const DEFAULT_PERMISOS: Permisos = {
   ver_objetos_perdidos: false,
   ver_ingresos:         false,
   ver_usuarios:         false,
-  ver_configuracion:    false,
   ver_emails_usuarios:  false,
   gestionar_roles:      false,
 };
@@ -35,7 +33,6 @@ export const FULL_PERMISOS: Permisos = {
   ver_objetos_perdidos: true,
   ver_ingresos:         true,
   ver_usuarios:         true,
-  ver_configuracion:    true,
   ver_emails_usuarios:  true,
   gestionar_roles:      true,
 };
@@ -77,11 +74,6 @@ export const PERMISOS_META: {
     key: "ver_usuarios",
     label: "Usuarios",
     descripcion: "Ver la lista de usuarios del panel",
-  },
-  {
-    key: "ver_configuracion",
-    label: "Configuración",
-    descripcion: "Ver y editar configuración de cuenta",
   },
   {
     key: "ver_emails_usuarios",

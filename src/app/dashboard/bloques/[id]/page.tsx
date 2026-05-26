@@ -74,10 +74,27 @@ function LockerModal({
   async function changeStatus(newStatus: LockerStatus) {
     if (newStatus === localLocker.status) return;
     setSaving(true);
-    await supabase
-      .from("taquillas")
-      .update({ estado: newStatus })
-      .eq("id", localLocker.id);
+
+    const prevLabel = LOCKER_LABEL[localLocker.status];
+    const newLabel  = LOCKER_LABEL[newStatus];
+
+    await Promise.all([
+      supabase
+        .from("taquillas")
+        .update({ estado: newStatus })
+        .eq("id", localLocker.id),
+      fetch("/api/logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bloque_id:   localLocker.blockId,
+          taquilla_id: localLocker.id,
+          tipo:        "estado_cambiado",
+          descripcion: `Taquilla #${String(localLocker.number).padStart(2, "0")}: ${prevLabel} → ${newLabel}`,
+        }),
+      }),
+    ]);
+
     const updated = { ...localLocker, status: newStatus };
     setLocalLocker(updated);
     onUpdate(updated);
@@ -87,6 +104,10 @@ function LockerModal({
   async function markObjectCollected() {
     setSaving(true);
     await Promise.all([
+      supabase
+        .from("taquillas")
+        .update({ tiene_objeto_olvidado: false })
+        .eq("id", localLocker.id),
       supabase
         .from("objetos_perdidos")
         .update({ estado: "collected" })

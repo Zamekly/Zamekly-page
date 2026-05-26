@@ -12,7 +12,7 @@ import type { Permisos } from "@/lib/permisos";
 type NavItem = {
   href: string;
   label: string;
-  permiso: keyof Permisos;
+  permiso?: keyof Permisos; // opcional → siempre visible si está ausente
   icon: React.ReactNode;
 };
 
@@ -76,6 +76,16 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: "/dashboard/logs",
+    label: "Logs",
+    permiso: "ver_bloques",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
+        <path d="M4 5h12M4 9h8M4 13h10M4 17h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/dashboard/usuarios",
     label: "Usuarios",
     permiso: "ver_usuarios",
@@ -100,7 +110,7 @@ const NAV: NavItem[] = [
   {
     href: "/dashboard/configuracion",
     label: "Configuración",
-    permiso: "ver_configuracion",
+    // sin permiso → siempre visible para cualquier usuario con rol
     icon: (
       <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
         <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" />
@@ -124,7 +134,7 @@ export default function Sidebar({ permisos, esPropietario }: Props) {
   const router = useRouter();
   const { theme, toggle } = useTheme();
 
-  const visibleNav = NAV.filter((item) => permisos[item.permiso]);
+  const visibleNav = NAV.filter((item) => !item.permiso || permisos[item.permiso]);
 
   async function handleLogout() {
     try {
