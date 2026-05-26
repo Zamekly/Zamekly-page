@@ -161,7 +161,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="mb-10 flex justify-center">
           <a href="/">
-            <Logo />
+            <Logo className="text-brand-navy" />
           </a>
         </div>
 

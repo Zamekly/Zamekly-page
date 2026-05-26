@@ -12,7 +12,7 @@ type Props = {
  * The SVG uses currentColor for the mark fill so the whole logo can be
  * tinted via Tailwind text-* utilities on the wrapping span.
  */
-export default function Logo({ className = "text-brand-navy", markOnly = false }: Props) {
+export default function Logo({ className = "text-brand-navy dark:text-white", markOnly = false }: Props) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <svg
@@ -21,7 +21,7 @@ export default function Logo({ className = "text-brand-navy", markOnly = false }
         className="h-8 w-8 shrink-0"
         aria-hidden="true"
       >
-        <rect width="32" height="32" rx="8" fill="currentColor" />
+        <rect width="32" height="32" rx="8" fill="currentColor" className="dark:fill-brand-navy" />
         <path
           d="M10.5 11h11l-11 10h11"
           stroke="white"

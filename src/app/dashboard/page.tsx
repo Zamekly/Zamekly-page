@@ -1,7 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { usePermisos } from "@/components/dashboard/PermisosProvider";
+import type { Permisos } from "@/lib/permisos";
+
+// ─── Orden de redirección cuando no hay ver_vista_general ─────────────────────
+
+const REDIRECT_ORDER: { href: string; permiso: keyof Permisos }[] = [
+  { href: "/dashboard/bloques",          permiso: "ver_bloques" },
+  { href: "/dashboard/alertas",          permiso: "ver_alertas" },
+  { href: "/dashboard/objetos-perdidos", permiso: "ver_objetos_perdidos" },
+  { href: "/dashboard/ingresos",         permiso: "ver_ingresos" },
+  { href: "/dashboard/usuarios",         permiso: "ver_usuarios" },
+  { href: "/dashboard/roles",            permiso: "gestionar_roles" },
+  { href: "/dashboard/configuracion",    permiso: "ver_configuracion" },
+];
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
 
@@ -45,6 +60,9 @@ type BloqueRow = {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const { permisos } = usePermisos();
+  const router = useRouter();
+
   const [bloques, setBloques] = useState<BloqueRow[]>([]);
   const [stats, setStats] = useState({
     total: 0,
@@ -57,7 +75,18 @@ export default function DashboardPage() {
   >({});
   const [loading, setLoading] = useState(true);
 
+  // ── Redirección si no tiene ver_vista_general ──────────────────────────────
   useEffect(() => {
+    if (!permisos.ver_vista_general) {
+      const first = REDIRECT_ORDER.find((item) => permisos[item.permiso]);
+      if (first) router.replace(first.href);
+    }
+  }, [permisos, router]);
+
+  // ── Carga de datos ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!permisos.ver_vista_general) return; // no cargar si vamos a redirigir
+
     async function load() {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
@@ -105,7 +134,18 @@ export default function DashboardPage() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [permisos.ver_vista_general]);
+
+  // ── Sin ver_vista_general: esperar redirección o mostrar sin permisos ──────
+  if (!permisos.ver_vista_general) {
+    const hasAny = REDIRECT_ORDER.some((item) => permisos[item.permiso]);
+    if (hasAny) return null; // redirigiendo…
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-sm text-gray-400 dark:text-slate-500">Sin secciones disponibles.</p>
+      </div>
+    );
+  }
 
   const occupancyPct =
     stats.total > 0 ? Math.round((stats.occupied / stats.total) * 100) : 0;
@@ -126,6 +166,20 @@ export default function DashboardPage() {
     offline: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   };
 
+  // ── Sin ningún permiso de contenido: bienvenida simple ───────────────────
+  const hasContent =
+    permisos.ver_bloques || permisos.ver_ingresos || permisos.ver_alertas;
+
+  if (!hasContent) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-sm text-gray-500 dark:text-slate-400">
+          Bienvenido al panel de Zamekly.
+        </p>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -136,33 +190,43 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Ocupación total"
-          value={`${occupancyPct}%`}
-          sub={`${stats.occupied} de ${stats.total} taquillas`}
-        />
-        <StatCard
-          label="Ingresos hoy"
-          value={`${stats.todayRevenue.toFixed(0)} €`}
-          sub="Todos los bloques"
-        />
-        <StatCard
-          label="Alertas activas"
-          value={String(stats.activeAlerts)}
-          sub="Requieren atención"
-          alert={true}
-        />
-        <StatCard
-          label="Bloques operativos"
-          value={`${operationalBlocks} / ${bloques.length}`}
-          sub="En funcionamiento"
-        />
-      </div>
+      {/* Stat cards — visibles según permisos */}
+      {(permisos.ver_bloques || permisos.ver_ingresos || permisos.ver_alertas) && (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {permisos.ver_bloques && (
+            <StatCard
+              label="Ocupación total"
+              value={`${occupancyPct}%`}
+              sub={`${stats.occupied} de ${stats.total} taquillas`}
+            />
+          )}
+          {permisos.ver_ingresos && (
+            <StatCard
+              label="Ingresos hoy"
+              value={`${stats.todayRevenue.toFixed(0)} €`}
+              sub="Todos los bloques"
+            />
+          )}
+          {permisos.ver_alertas && (
+            <StatCard
+              label="Alertas activas"
+              value={String(stats.activeAlerts)}
+              sub="Requieren atención"
+              alert={true}
+            />
+          )}
+          {permisos.ver_bloques && (
+            <StatCard
+              label="Bloques operativos"
+              value={`${operationalBlocks} / ${bloques.length}`}
+              sub="En funcionamiento"
+            />
+          )}
+        </div>
+      )}
 
-      {/* Blocks table */}
-      <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-[#1E293B] dark:ring-slate-700">
+      {/* Tabla de bloques — solo si ver_bloques */}
+      {permisos.ver_bloques && <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-[#1E293B] dark:ring-slate-700">
         <div className="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
           <h2 className="text-sm font-semibold text-brand-navy dark:text-white">
             Resumen de bloques
@@ -250,7 +314,7 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

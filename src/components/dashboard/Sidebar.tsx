@@ -5,11 +5,22 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "./ThemeProvider";
 import Logo from "@/components/Logo";
 import { supabase } from "@/lib/supabase";
+import type { Permisos } from "@/lib/permisos";
 
-const NAV = [
+// ─── Definición de nav con clave de permiso ───────────────────────────────────
+
+type NavItem = {
+  href: string;
+  label: string;
+  permiso: keyof Permisos;
+  icon: React.ReactNode;
+};
+
+const NAV: NavItem[] = [
   {
     href: "/dashboard",
     label: "Vista general",
+    permiso: "ver_vista_general",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
         <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
@@ -22,6 +33,7 @@ const NAV = [
   {
     href: "/dashboard/bloques",
     label: "Bloques",
+    permiso: "ver_bloques",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
         <rect x="2" y="6" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -33,6 +45,7 @@ const NAV = [
   {
     href: "/dashboard/alertas",
     label: "Alertas",
+    permiso: "ver_alertas",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
         <path d="M10 2a6 6 0 0 1 6 6c0 3.5 1.5 5 1.5 5H2.5S4 11.5 4 8a6 6 0 0 1 6-6Z" stroke="currentColor" strokeWidth="1.5" />
@@ -43,6 +56,7 @@ const NAV = [
   {
     href: "/dashboard/objetos-perdidos",
     label: "Objetos perdidos",
+    permiso: "ver_objetos_perdidos",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
         <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.5" />
@@ -53,6 +67,7 @@ const NAV = [
   {
     href: "/dashboard/ingresos",
     label: "Ingresos",
+    permiso: "ver_ingresos",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
         <path d="M3 14l4-4 3 3 4-5 3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -63,6 +78,7 @@ const NAV = [
   {
     href: "/dashboard/usuarios",
     label: "Usuarios",
+    permiso: "ver_usuarios",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
         <circle cx="8" cy="6" r="3" stroke="currentColor" strokeWidth="1.5" />
@@ -72,8 +88,19 @@ const NAV = [
     ),
   },
   {
+    href: "/dashboard/roles",
+    label: "Roles",
+    permiso: "gestionar_roles",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
+        <path d="M10 2l2 4.5h4.5l-3.6 2.8 1.4 4.7L10 11.3l-4.3 2.7 1.4-4.7L3.5 6.5H8L10 2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/dashboard/configuracion",
     label: "Configuración",
+    permiso: "ver_configuracion",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden>
         <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" />
@@ -83,10 +110,21 @@ const NAV = [
   },
 ];
 
-export default function Sidebar() {
+// ─── Props ────────────────────────────────────────────────────────────────────
+
+type Props = {
+  permisos: Permisos;
+  esPropietario: boolean;
+};
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
+export default function Sidebar({ permisos, esPropietario }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggle } = useTheme();
+
+  const visibleNav = NAV.filter((item) => permisos[item.permiso]);
 
   async function handleLogout() {
     try {
@@ -108,29 +146,45 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <ul className="space-y-0.5">
-          {NAV.map((item) => {
-            const active =
-              item.href === "/dashboard"
-                ? pathname === "/dashboard"
-                : pathname.startsWith(item.href);
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                    active
-                      ? "bg-brand-navy text-white dark:bg-brand-navy-soft"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700/50 dark:hover:text-white"
-                  }`}
-                >
-                  {item.icon}
-                  {item.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        {visibleNav.length === 0 ? (
+          <p className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500">
+            Sin secciones disponibles
+          </p>
+        ) : (
+          <ul className="space-y-0.5">
+            {visibleNav.map((item) => {
+              const active =
+                item.href === "/dashboard"
+                  ? pathname === "/dashboard"
+                  : pathname.startsWith(item.href);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                      active
+                        ? "bg-brand-navy text-white dark:bg-brand-navy-soft"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700/50 dark:hover:text-white"
+                    }`}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {/* Badge de rol Propietario */}
+        {esPropietario && (
+          <div className="mt-4 mx-3 flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 dark:bg-slate-700/60">
+            <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5 text-brand-navy dark:text-slate-300" aria-hidden>
+              <path d="M8 1l1.8 3.6L14 5.5l-3 2.9.7 4.1L8 10.4l-3.7 2.1.7-4.1L2 5.5l4.2-.9L8 1Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+            </svg>
+            <span className="text-xs font-medium text-brand-navy dark:text-slate-300">Propietario</span>
+          </div>
+        )}
       </nav>
 
       {/* Bottom actions */}

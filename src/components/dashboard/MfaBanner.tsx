@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function MfaBanner() {
   const [show, setShow] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     async function check() {
@@ -14,7 +16,7 @@ export default function MfaBanner() {
       setShow(!hasVerified);
     }
     check();
-  }, []);
+  }, [pathname]);
 
   if (!show) return null;
 

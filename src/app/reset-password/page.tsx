@@ -69,7 +69,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-sm">
         <div className="mb-10 flex justify-center">
           <a href="/">
-            <Logo />
+            <Logo className="text-brand-navy" />
           </a>
         </div>
 

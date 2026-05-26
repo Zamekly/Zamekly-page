@@ -86,11 +86,19 @@ function LockerModal({
 
   async function markObjectCollected() {
     setSaving(true);
-    await supabase
-      .from("objetos_perdidos")
-      .update({ estado: "collected" })
-      .eq("taquilla_id", localLocker.id)
-      .eq("estado", "pending");
+    await Promise.all([
+      supabase
+        .from("objetos_perdidos")
+        .update({ estado: "collected" })
+        .eq("taquilla_id", localLocker.id)
+        .eq("estado", "pending"),
+      supabase
+        .from("alertas")
+        .update({ estado: "resolved" })
+        .eq("taquilla_id", localLocker.id)
+        .eq("tipo", "lost_object")
+        .eq("estado", "active"),
+    ]);
     const updated = { ...localLocker, hasLostObject: false };
     setLocalLocker(updated);
     onUpdate(updated);
